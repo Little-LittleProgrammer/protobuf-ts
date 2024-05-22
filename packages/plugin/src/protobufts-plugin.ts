@@ -101,6 +101,11 @@ export class ProtobuftsPlugin extends PluginBase {
             description: "Adds the suffix `_pb` to the names of all generated files. This will become the \n" +
                          "default behaviour in the next major release.",
         },
+        only_interface: {
+            description: "Adds the suffix `_pb` to the names of all generated files. This will become the \n" +
+                         "default behaviour in the next major release.",
+            excludes: ['output_javascript','output_javascript_es2015', "output_javascript_es2016", "output_javascript_es2017", "output_javascript_es2018", "output_javascript_es2019", "output_javascript_es2020"]
+        },
 
         // output types
         output_typescript: {
@@ -305,42 +310,46 @@ export class ProtobuftsPlugin extends PluginBase {
                 }
             });
 
-            registry.visitTypes(fileDescriptor, descriptor => {
-                // still not interested in synthetic types like map entry messages
-                if (registry.isSyntheticElement(descriptor)) return;
-
-                if (DescriptorProto.is(descriptor)) {
-                    genMessageType.generateMessageType(outMain, descriptor, optionResolver.getOptimizeMode(fileDescriptor));
-                }
-
-                if (!options.forceDisableServices) {
-                    if (ServiceDescriptorProto.is(descriptor)) {
-                        // service type
-                        genServiceType.generateServiceType(outMain, descriptor);
-
-                        // clients
-                        const clientStyles = optionResolver.getClientStyles(descriptor);
-                        if (clientStyles.includes(ClientStyle.GENERIC_CLIENT)) {
-                            genClientGeneric.generateInterface(outClientCall, descriptor);
-                            genClientGeneric.generateImplementationClass(outClientCall, descriptor);
-                        }
-                        if (clientStyles.includes(ClientStyle.GRPC1_CLIENT)) {
-                            genClientGrpc.generateInterface(outClientGrpc, descriptor);
-                            genClientGrpc.generateImplementationClass(outClientGrpc, descriptor);
-                        }
-
-                        // servers
-                        const serverStyles = optionResolver.getServerStyles(descriptor);
-                        if (serverStyles.includes(ServerStyle.GENERIC_SERVER)) {
-                            genServerGeneric.generateInterface(outServerGeneric, descriptor);
-                        }
-                        if (serverStyles.includes(ServerStyle.GRPC1_SERVER)) {
-                            genServerGrpc.generateInterface(outServerGrpc, descriptor);
-                            genServerGrpc.generateDefinition(outServerGrpc, descriptor);
+            // TODO delete
+            if (!options.onlyInterface) {
+                registry.visitTypes(fileDescriptor, descriptor => {
+                    // still not interested in synthetic types like map entry messages
+                    if (registry.isSyntheticElement(descriptor)) return;
+    
+                    if (DescriptorProto.is(descriptor)) {
+                        genMessageType.generateMessageType(outMain, descriptor, optionResolver.getOptimizeMode(fileDescriptor));
+                    }
+    
+                    if (!options.forceDisableServices) {
+                        if (ServiceDescriptorProto.is(descriptor)) {
+                            // service type
+                            genServiceType.generateServiceType(outMain, descriptor);
+    
+                            // clients
+                            const clientStyles = optionResolver.getClientStyles(descriptor);
+                            if (clientStyles.includes(ClientStyle.GENERIC_CLIENT)) {
+                                genClientGeneric.generateInterface(outClientCall, descriptor);
+                                genClientGeneric.generateImplementationClass(outClientCall, descriptor);
+                            }
+                            if (clientStyles.includes(ClientStyle.GRPC1_CLIENT)) {
+                                genClientGrpc.generateInterface(outClientGrpc, descriptor);
+                                genClientGrpc.generateImplementationClass(outClientGrpc, descriptor);
+                            }
+    
+                            // servers
+                            const serverStyles = optionResolver.getServerStyles(descriptor);
+                            if (serverStyles.includes(ServerStyle.GENERIC_SERVER)) {
+                                genServerGeneric.generateInterface(outServerGeneric, descriptor);
+                            }
+                            if (serverStyles.includes(ServerStyle.GRPC1_SERVER)) {
+                                genServerGrpc.generateInterface(outServerGrpc, descriptor);
+                                genServerGrpc.generateDefinition(outServerGrpc, descriptor);
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
+            
 
         }
 

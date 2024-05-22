@@ -200,6 +200,7 @@ export interface InternalOptions {
     readonly transpileModule: ts.ModuleKind,
     readonly forceDisableServices: boolean;
     readonly addPbSuffix: boolean;
+    readonly onlyInterface: boolean;
 }
 
 export function makeInternalOptions(
@@ -224,6 +225,7 @@ export function makeInternalOptions(
         client_none: boolean,
         client_grpc1: boolean,
         add_pb_suffix: boolean,
+        only_interface: boolean;
         force_disable_services: boolean;
         output_typescript: boolean,
         output_javascript: boolean,
@@ -262,6 +264,7 @@ export function makeInternalOptions(
             transpileModule: ts.ModuleKind.ES2015,
             forceDisableServices: false,
             addPbSuffix: false,
+            onlyInterface: false,
         },
     ) as Writeable<InternalOptions>;
     if (pluginCredit) {
@@ -320,6 +323,9 @@ export function makeInternalOptions(
     }
     if (params?.add_pb_suffix) {
         o.addPbSuffix = true;
+    }
+    if (params?.only_interface) {
+        o.onlyInterface = true;
     }
     if (params?.force_disable_services) {
       o.forceDisableServices = true;

@@ -37,6 +37,7 @@ clientcompat7: build
 	protoc \
 		--ts_out=clientcompat \
 		--plugin=../plugin/bin/protoc-gen-ts \
+		--ts_opt=only_interface
 		--proto_path=clientcompat/ \
 		clientcompat/clientcompat.proto
 	./node_modules/.bin/tsc --target ES2015 --module commonjs clientcompat/clientcompat.ts clientcompat/client.ts
