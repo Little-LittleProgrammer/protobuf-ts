@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {},
+  },
+  "include": ["*.ts", "**/*.ts", "node_modules/@q-front-npm/types/**/*.d.ts"],
+}

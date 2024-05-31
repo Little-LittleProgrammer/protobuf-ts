@@ -28,6 +28,7 @@ import {ServiceClientGeneratorGrpc} from "./code-gen/service-client-generator-gr
 import * as ts from "typescript";
 import {assert} from "@protobuf-ts/runtime";
 import {WellKnownTypes} from "./message-type-extensions/well-known-types";
+import { ServiceClientGeneratorHttp } from "./code-gen/service-client-generator-http";
 
 
 export class ProtobuftsPlugin extends PluginBase {
@@ -102,9 +103,12 @@ export class ProtobuftsPlugin extends PluginBase {
                          "default behaviour in the next major release.",
         },
         only_interface: {
-            description: "Adds the suffix `_pb` to the names of all generated files. This will become the \n" +
-                         "default behaviour in the next major release.",
+            description: "只生成接口和枚举, 不生成其他",
             excludes: ['output_javascript','output_javascript_es2015', "output_javascript_es2016", "output_javascript_es2017", "output_javascript_es2018", "output_javascript_es2019", "output_javascript_es2020"]
+        },
+        only_http: {
+            description: "只生成接口、枚举和通讯, 不生成其他",
+            excludes: ['only_interface']
         },
 
         // output types
@@ -250,6 +254,7 @@ export class ProtobuftsPlugin extends PluginBase {
             genServerGeneric = new ServiceServerGeneratorGeneric(symbols, registry, imports, comments, interpreter, options),
             genServerGrpc = new ServiceServerGeneratorGrpc(symbols, registry, imports, comments, interpreter, options),
             genClientGeneric = new ServiceClientGeneratorGeneric(symbols, registry, imports, comments, interpreter, options),
+            genClientHttp = new ServiceClientGeneratorHttp(symbols, registry, imports, comments, interpreter, options),
             genClientGrpc = new ServiceClientGeneratorGrpc(symbols, registry, imports, comments, interpreter, options)
         ;
 
@@ -274,6 +279,7 @@ export class ProtobuftsPlugin extends PluginBase {
 
 
         for (let fileDescriptor of registry.allFiles()) {
+            // fileDescriptor proto 文件
             const
                 outMain = new OutFile(fileTable.get(fileDescriptor).name, fileDescriptor, registry, options),
                 outServerGeneric = new OutFile(fileTable.get(fileDescriptor, 'generic-server').name, fileDescriptor, registry, options),
@@ -292,6 +298,7 @@ export class ProtobuftsPlugin extends PluginBase {
                 symbols.register(createLocalTypeName(descriptor, registry), descriptor, outMain);
                 if (ServiceDescriptorProto.is(descriptor)) {
                     genClientGeneric.registerSymbols(outClientCall, descriptor);
+                    genClientHttp.registerSymbols(outClientCall, descriptor);
                     genClientGrpc.registerSymbols(outClientGrpc, descriptor);
                     genServerGeneric.registerSymbols(outServerGeneric, descriptor);
                     genServerGrpc.registerSymbols(outServerGrpc, descriptor);
@@ -316,34 +323,55 @@ export class ProtobuftsPlugin extends PluginBase {
                     // still not interested in synthetic types like map entry messages
                     if (registry.isSyntheticElement(descriptor)) return;
     
-                    if (DescriptorProto.is(descriptor)) {
-                        genMessageType.generateMessageType(outMain, descriptor, optionResolver.getOptimizeMode(fileDescriptor));
-                    }
-    
-                    if (!options.forceDisableServices) {
+                    if(options.onlyHttp) {
+                        // 生成 propbuf 序列化方法
+                        if (DescriptorProto.is(descriptor)) {
+                            // TODO: methodInfo.O.typeName不存在, 需要更改MessageType
+                            // 生成文件太大
+                            // genMessageType.generateMessageType(outMain, descriptor, optionResolver.getOptimizeMode(fileDescriptor));
+                        }
                         if (ServiceDescriptorProto.is(descriptor)) {
                             // service type
                             genServiceType.generateServiceType(outMain, descriptor);
-    
-                            // clients
-                            const clientStyles = optionResolver.getClientStyles(descriptor);
-                            if (clientStyles.includes(ClientStyle.GENERIC_CLIENT)) {
-                                genClientGeneric.generateInterface(outClientCall, descriptor);
-                                genClientGeneric.generateImplementationClass(outClientCall, descriptor);
+                            // http
+                            const clientHttpStyles = optionResolver.getClientStyles(descriptor);
+                            if (clientHttpStyles.includes(ClientStyle.GENERIC_CLIENT)) {
+                                // 生成 http interface
+                                genClientHttp.generateInterface(outClientCall, descriptor);
+                                // 生成 http implementation
+                                genClientHttp.generateImplementationClass(outClientCall, descriptor);
                             }
-                            if (clientStyles.includes(ClientStyle.GRPC1_CLIENT)) {
-                                genClientGrpc.generateInterface(outClientGrpc, descriptor);
-                                genClientGrpc.generateImplementationClass(outClientGrpc, descriptor);
-                            }
-    
-                            // servers
-                            const serverStyles = optionResolver.getServerStyles(descriptor);
-                            if (serverStyles.includes(ServerStyle.GENERIC_SERVER)) {
-                                genServerGeneric.generateInterface(outServerGeneric, descriptor);
-                            }
-                            if (serverStyles.includes(ServerStyle.GRPC1_SERVER)) {
-                                genServerGrpc.generateInterface(outServerGrpc, descriptor);
-                                genServerGrpc.generateDefinition(outServerGrpc, descriptor);
+                        }
+                    } else {
+                        // 生成 propbuf 序列化方法
+                        if (DescriptorProto.is(descriptor)) {
+                            genMessageType.generateMessageType(outMain, descriptor, optionResolver.getOptimizeMode(fileDescriptor));
+                        }
+                        if (!options.forceDisableServices) {
+                            if (ServiceDescriptorProto.is(descriptor)) {
+                                // service type
+                                genServiceType.generateServiceType(outMain, descriptor);
+        
+                                // clients
+                                const clientStyles = optionResolver.getClientStyles(descriptor);
+                                if (clientStyles.includes(ClientStyle.GENERIC_CLIENT)) {
+                                    genClientGeneric.generateInterface(outClientCall, descriptor);
+                                    genClientGeneric.generateImplementationClass(outClientCall, descriptor);
+                                }
+                                if (clientStyles.includes(ClientStyle.GRPC1_CLIENT)) {
+                                    genClientGrpc.generateInterface(outClientGrpc, descriptor);
+                                    genClientGrpc.generateImplementationClass(outClientGrpc, descriptor);
+                                }
+        
+                                // servers
+                                const serverStyles = optionResolver.getServerStyles(descriptor);
+                                if (serverStyles.includes(ServerStyle.GENERIC_SERVER)) {
+                                    genServerGeneric.generateInterface(outServerGeneric, descriptor);
+                                }
+                                if (serverStyles.includes(ServerStyle.GRPC1_SERVER)) {
+                                    genServerGrpc.generateInterface(outServerGrpc, descriptor);
+                                    genServerGrpc.generateDefinition(outServerGrpc, descriptor);
+                                }
                             }
                         }
                     }

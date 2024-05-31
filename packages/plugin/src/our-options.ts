@@ -140,7 +140,12 @@ export enum ClientStyle {
     /**
      * Generate a client using @grpc/grpc-js (major version 1).
      */
-    GRPC1_CLIENT = 4
+    GRPC1_CLIENT = 4,
+
+    /**
+     * 基本的http客户端
+     */
+    HTTP_CLIENT = 5,
 }
 
 
@@ -190,6 +195,7 @@ export interface InternalOptions {
     readonly synthesizeEnumZeroValue: string | false; // create a "synthetic" enum value with this string as name if no 0 value is present
     readonly oneofKindDiscriminator: string;
     readonly runtimeRpcImportPath: string;
+    readonly runtimeHttpImportPath: string;
     readonly runtimeImportPath: string;
     readonly forceExcludeAllOptions: boolean;
     readonly keepEnumPrefix: boolean;
@@ -201,6 +207,7 @@ export interface InternalOptions {
     readonly forceDisableServices: boolean;
     readonly addPbSuffix: boolean;
     readonly onlyInterface: boolean;
+    readonly onlyHttp: boolean;
 }
 
 export function makeInternalOptions(
@@ -236,6 +243,7 @@ export function makeInternalOptions(
         output_javascript_es2019: boolean,
         output_javascript_es2020: boolean,
         output_legacy_commonjs: boolean,
+        only_http: boolean
     },
     pluginCredit?: string,
 ): InternalOptions {
@@ -254,6 +262,7 @@ export function makeInternalOptions(
             synthesizeEnumZeroValue: 'UNSPECIFIED$',
             oneofKindDiscriminator: 'oneofKind',
             runtimeRpcImportPath: '@protobuf-ts/runtime-rpc',
+            runtimeHttpImportPath: '@protobuf-ts/runtime-http',
             runtimeImportPath: '@protobuf-ts/runtime',
             forceExcludeAllOptions: false,
             keepEnumPrefix: false,
@@ -265,6 +274,7 @@ export function makeInternalOptions(
             forceDisableServices: false,
             addPbSuffix: false,
             onlyInterface: false,
+            onlyHttp: false,
         },
     ) as Writeable<InternalOptions>;
     if (pluginCredit) {
@@ -326,6 +336,9 @@ export function makeInternalOptions(
     }
     if (params?.only_interface) {
         o.onlyInterface = true;
+    }
+    if (params?.only_http) {
+        o.onlyHttp = true;
     }
     if (params?.force_disable_services) {
       o.forceDisableServices = true;

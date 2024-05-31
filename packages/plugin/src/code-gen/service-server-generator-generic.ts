@@ -41,6 +41,7 @@ export class ServiceServerGeneratorGeneric extends GeneratorBase {
             IGenericServer = this.imports.type(source, descriptor, this.symbolKindInterface),
             ServerCallContext = this.imports.name(source, "ServerCallContext", this.options.runtimeRpcImportPath)
         ;
+        console.log(interpreterType, IGenericServer, ServerCallContext)
 
         const statement = ts.createInterfaceDeclaration(
             undefined,

@@ -50,6 +50,7 @@ export class MethodInfoGenerator {
         }
 
         // I: The generated type handler for the input message.
+        // TODO change
         properties.push(ts.createPropertyAssignment(
             ts.createIdentifier('I'),
             ts.createIdentifier(this.imports.type(
@@ -59,6 +60,7 @@ export class MethodInfoGenerator {
         ));
 
         // O: The generated type handler for the output message.
+        // TODO change
         properties.push(ts.createPropertyAssignment(
             ts.createIdentifier('O'),
             ts.createIdentifier(this.imports.type(

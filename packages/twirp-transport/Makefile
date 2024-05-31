@@ -31,18 +31,18 @@ test-browser:
 	@./node_modules/.bin/karma start karma.conf.js
 
 
-clientcompat: clientcompat7
+# clientcompat: clientcompat7
 
-clientcompat7: build
-	protoc \
-		--ts_out=clientcompat \
-		--plugin=../plugin/bin/protoc-gen-ts \
-		--ts_opt=only_interface
-		--proto_path=clientcompat/ \
-		clientcompat/clientcompat.proto
-	./node_modules/.bin/tsc --target ES2015 --module commonjs clientcompat/clientcompat.ts clientcompat/client.ts
-	go install github.com/twitchtv/twirp/clientcompat@v7.0.0
-	${HOME}/go/bin/clientcompat -client clientcompat/client-runner.js
+# clientcompat7: build
+# 	protoc \
+# 		--ts_out=clientcompat \
+# 		--plugin=../plugin/bin/protoc-gen-ts \
+# 		--ts_opt=only_interface \
+# 		--proto_path=clientcompat/ \
+# 		clientcompat/clientcompat.proto
+# 	./node_modules/.bin/tsc --target ES2015 --module commonjs clientcompat/clientcompat.ts clientcompat/client.ts
+# 	go install github.com/twitchtv/twirp/clientcompat@v7.0.0
+# 	${HOME}/go/bin/clientcompat -client clientcompat/client-runner.js
 
 clientcompat8: build
 	protoc \
