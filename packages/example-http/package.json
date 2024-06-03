@@ -1,6 +1,6 @@
 {
   "name": "@protobuf-ts/example-http",
-  "version": "2.9.5",
+  "version": "2.9.6",
   "description": "",
   "main": "dist/rum.cjs.min.js",
   "module": "dist/rum.esm.min.js",
@@ -16,10 +16,10 @@
   "license": "ISC",
   "dependencies": {
     "@grpc/grpc-js": "^1.2.2",
-    "@protobuf-ts/plugin": "^2.9.5",
-    "@protobuf-ts/protoc": "^2.9.5",
-    "@protobuf-ts/runtime": "^2.9.5",
-    "@protobuf-ts/runtime-rpc": "^2.9.5",
+    "@protobuf-ts/plugin": "^2.9.6",
+    "@protobuf-ts/protoc": "^2.9.6",
+    "@protobuf-ts/runtime": "^2.9.6",
+    "@protobuf-ts/runtime-rpc": "^2.9.6",
     "ts-node": "^8.10.2",
     "typescript": "^3.9.5"
   }
