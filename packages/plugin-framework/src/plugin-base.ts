@@ -9,7 +9,6 @@ import {types} from "util";
 import {GeneratedFile} from "./generated-file";
 import {PbULong} from "@protobuf-ts/runtime";
 
-
 export type OptionsSpec = {
     [key: string]: {
         description: string;

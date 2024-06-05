@@ -43,7 +43,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
      * We generate the following interface:
      *
      *   interface ISimpleServiceClient {
-     *     get(request: GetRequest, options?: RpcOptions): Promise<Result<ExampleResponse>>;
+     *     get(request: GetRequest, options?: HttpOptions): Promise<Result<ExampleResponse>>;
      *   }
      *
      */
@@ -86,8 +86,10 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
             ServiceClient = this.imports.type(source, descriptor, this.symbolKindImplementation),
             IServiceClient = this.imports.type(source, descriptor, this.symbolKindInterface),
             ServiceInfo = this.imports.name(source, 'ServiceInfo', this.options.runtimeHttpImportPath, true),
-            RpcTransport = this.imports.name(source, 'RpcTransport', this.options.runtimeHttpImportPath, false),
-            RpcOptions = this.imports.name(source, 'RpcOptions', this.options.runtimeHttpImportPath, true);
+            HttpTransport = this.imports.name(source, 'HttpTransport', this.options.runtimeHttpImportPath, false),
+            HttpOptions = this.imports.name(source, 'HttpOptions', this.options.runtimeHttpImportPath, true),
+            VAxios = this.imports.name(source, 'VAxios', this.options.runtimeHttpImportPath, true),
+            VAxiosInstance = this.imports.name(source, 'VAxiosInstance', this.options.runtimeHttpImportPath, true);
 
         const classDecorators: ts.Decorator[] = [];
         const constructorDecorators: ts.Decorator[] = [];
@@ -120,22 +122,31 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
             ),
             ts.createProperty(
                 undefined, [ts.createModifier(ts.SyntaxKind.PublicKeyword)], 'defHttp',
-                undefined, ts.createTypeReferenceNode(ts.createIdentifier(RpcTransport), undefined), undefined),
+                undefined, ts.createTypeReferenceNode(ts.createIdentifier(HttpTransport), undefined), undefined),
 
-            // constructor(@Inject(RPC_TRANSPORT)  RpcTransport) {}
+            // constructor(@Inject(RPC_TRANSPORT)  HttpTransport) {}
             ts.createConstructor(
                 undefined, undefined,
                 [ts.createParameter(
                     constructorDecorators,
                     undefined,
-                    undefined, ts.createIdentifier("opt"), undefined,
-                    ts.createTypeReferenceNode(ts.createIdentifier(RpcOptions), undefined),
+                    undefined, ts.createIdentifier("vAxios"), undefined,
+                    ts.createUnionTypeNode([ // 参数类型：VAxios | VAxiosInstance
+                        ts.createTypeReferenceNode(VAxios, undefined),
+                        ts.createTypeReferenceNode(VAxiosInstance, undefined)
+                    ]),
                     undefined
+                ), ts.createParameter(
+                    constructorDecorators,
+                    undefined,
+                    undefined, ts.createIdentifier("opt"), undefined,
+                    ts.createTypeReferenceNode(ts.createIdentifier(HttpOptions), undefined),
+                    ts.createObjectLiteral([]) 
                 )],
                 ts.createBlock([
                     ts.createStatement(ts.createAssignment(
                         ts.createPropertyAccess(ts.createThis(), 'defHttp'),
-                        ts.createNew(ts.createIdentifier('RpcTransport'), undefined, [ts.createIdentifier('opt')])
+                        ts.createNew(ts.createIdentifier('HttpTransport'), undefined, [ts.createIdentifier("vAxios"), ts.createIdentifier('opt')])
                     ))
                 ], true)
             ),
@@ -185,9 +196,9 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 		source: TypescriptFile,
 		methodInfo: MethodInfo
 	): ts.MethodDeclaration {
-		let RpcOptions = this.imports.name(
+		let HttpOptions = this.imports.name(
 			source,
-			'RpcOptions',
+			'HttpOptions',
 			this.options.runtimeHttpImportPath,
 			true
 		);
@@ -222,9 +233,9 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 					undefined,
 					ts.createIdentifier('options'),
 					ts.createToken(ts.SyntaxKind.QuestionToken),
-					ts.createTypeReferenceNode(
-						ts.createIdentifier(RpcOptions),
-						undefined
+					ts.createIndexedAccessTypeNode(
+						ts.createTypeReferenceNode(ts.createIdentifier(HttpOptions), undefined),
+						ts.createLiteralTypeNode(ts.createStringLiteral('requestOptions'))
 					),
 					undefined
 				),

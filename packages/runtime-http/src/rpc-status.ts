@@ -2,12 +2,12 @@
  * A RPC status consists of a code and a text message.
  *
  * The status is usually returned from the server as a response trailer,
- * but a `RpcTransport` may also read the status from response headers.
+ * but a `HttpTransport` may also read the status from response headers.
  */
 export interface RpcStatus {
 
     /**
-     * A status code as a string. The value depends on the `RpcTransport` being
+     * A status code as a string. The value depends on the `HttpTransport` being
      * used.
      *
      * For gRPC, it will be the string value of a StatusCode enum value

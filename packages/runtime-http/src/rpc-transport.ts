@@ -1,11 +1,10 @@
-import { lowerCamelCase } from "@protobuf-ts/runtime";
-import type { MethodInfo } from "./reflection-info";
-import type {RpcOptions} from "./rpc-options";
-import { createAxios } from "@q-front-npm/http";
+import { lowerCamelCase } from "./reflection-info";
+import type {MethodInfo}  from "./reflection-info";
+import type {HttpOptions} from "./rpc-options";
 
 
 /**
- * A `RpcTransport` executes Remote Procedure Calls defined by a protobuf
+ * A `HttpTransport` executes Remote Procedure Calls defined by a protobuf
  * service.
  *
  * This interface is the contract between a generated service client and
@@ -16,16 +15,16 @@ import { createAxios } from "@q-front-npm/http";
  *
  * Some rules:
  *
- * a) An implementation **should** accept default `RpcOptions` (or an
- * interface that extends `RpcOptions`) in the constructor.
+ * a) An implementation **should** accept default `HttpOptions` (or an
+ * interface that extends `HttpOptions`) in the constructor.
  *
  * b) An implementation **must** merge the options given to `mergeOptions()`
  * with its default options. If no extra options are implemented, or only
  * primitive option values are used, using `mergeRpcOptions()` will
  * produce the required behaviour.
  *
- * c) An implementation **must** pass `RpcOptions.jsonOptions` and
- * `RpcOptions.binaryOptions` to the `fromBinary`, `toBinary`, `fromJson`
+ * c) An implementation **must** pass `HttpOptions.jsonOptions` and
+ * `HttpOptions.binaryOptions` to the `fromBinary`, `toBinary`, `fromJson`
  * and `toJson` methods when preparing a request or parsing a response.
  *
  * d) An implementation may support arbitrary other options, but they **must
@@ -38,31 +37,42 @@ import { createAxios } from "@q-front-npm/http";
 //      * Generated service clients will call this method with the users'
 //      * call options and pass the result to the execute-method below.
 //      */
-//     mergeOptions(options?: Partial<RpcOptions>): RpcOptions;
+//     mergeOptions(options?: Partial<HttpOptions>): HttpOptions;
 
 //     /**
 //      * Execute an unary RPC.
 //      */
 //     unary<I extends object>(
 //         method: MethodInfo<I>,
-//         input: I, options: RpcOptions): HttpResult<I>
+//         input: I, options: HttpOptions): HttpResult<I>
 // }
-export class RpcTransport {
+
+export interface VAxiosInstance {
+    request<T>(config: Record<string, any>, options?: Record<string, any>): Promise<T>
+}
+
+export type VAxios = new (options: HttpOptions) => VAxiosInstance
+export class HttpTransport {
     
-    defaultOptions: RpcOptions;
-    vAxios: ReturnType<typeof createAxios>
-    constructor(options: RpcOptions) {
+    defaultOptions: HttpOptions;
+    vAxios: VAxiosInstance
+    constructor(vAxios: VAxios | VAxiosInstance, options: HttpOptions = {}) {
         this.defaultOptions = options;
-        this.vAxios = createAxios(options)
+        if (typeof vAxios === 'function') {
+            this.vAxios = new vAxios(options)
+        } else {
+            this.vAxios = (vAxios as VAxiosInstance)
+        }
+        
     }
     
-    request(method: MethodInfo, input: any, opt?: RpcOptions['requestOptions']) {
+    request<T>(method: MethodInfo, input: any, opt?: HttpOptions['requestOptions']) {
         let url = this.makeUrl(method);
         let mt = this.makeMethod(method);
-        return this.vAxios.request({
+        return this.vAxios.request<T>({
             url,
             method: mt,
-            ...input
+            params: input
         }, opt)
 
     }

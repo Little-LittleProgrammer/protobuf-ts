@@ -21,6 +21,7 @@ import {MessageInterfaceGenerator} from "./code-gen/message-interface-generator"
 import {MessageTypeGenerator} from "./code-gen/message-type-generator";
 import {EnumGenerator} from "./code-gen/enum-generator";
 import {ServiceTypeGenerator} from "./code-gen/service-type-generator";
+import {ServiceTypeGeneratorHttp} from "./code-gen/http-type-generator";
 import {ServiceClientGeneratorGeneric} from "./code-gen/service-client-generator-generic";
 import {FileTable} from "./file-table";
 import {ServiceServerGeneratorGeneric} from "./code-gen/service-server-generator-generic";
@@ -251,6 +252,7 @@ export class ProtobuftsPlugin extends PluginBase {
             genEnum = new EnumGenerator(symbols, registry, imports, comments, interpreter, options),
             genMessageType = new MessageTypeGenerator(symbols, registry, imports, comments, interpreter, options),
             genServiceType = new ServiceTypeGenerator(symbols, registry, imports, comments, interpreter, options),
+            genServiceTypeHttp = new ServiceTypeGeneratorHttp(symbols, registry, imports, comments, interpreter, options),
             genServerGeneric = new ServiceServerGeneratorGeneric(symbols, registry, imports, comments, interpreter, options),
             genServerGrpc = new ServiceServerGeneratorGrpc(symbols, registry, imports, comments, interpreter, options),
             genClientGeneric = new ServiceClientGeneratorGeneric(symbols, registry, imports, comments, interpreter, options),
@@ -279,12 +281,14 @@ export class ProtobuftsPlugin extends PluginBase {
 
 
         for (let fileDescriptor of registry.allFiles()) {
+            const mainName = fileTable.get(fileDescriptor).name
+            const clientName = fileTable.get(fileDescriptor, 'client').name
             // fileDescriptor proto 文件
             const
-                outMain = new OutFile(fileTable.get(fileDescriptor).name, fileDescriptor, registry, options),
+                outMain = new OutFile(mainName, fileDescriptor, registry, options),
                 outServerGeneric = new OutFile(fileTable.get(fileDescriptor, 'generic-server').name, fileDescriptor, registry, options),
                 outServerGrpc = new OutFile(fileTable.get(fileDescriptor, 'grpc1-server').name, fileDescriptor, registry, options),
-                outClientCall = new OutFile(fileTable.get(fileDescriptor, 'client').name, fileDescriptor, registry, options),
+                outClientCall = new OutFile(clientName, fileDescriptor, registry, options),
                 outClientPromise = new OutFile(fileTable.get(fileDescriptor, 'promise-client').name, fileDescriptor, registry, options),
                 outClientRx = new OutFile(fileTable.get(fileDescriptor, 'rx-client').name, fileDescriptor, registry, options),
                 outClientGrpc = new OutFile(fileTable.get(fileDescriptor, 'grpc1-client').name, fileDescriptor, registry, options);
@@ -332,7 +336,7 @@ export class ProtobuftsPlugin extends PluginBase {
                         }
                         if (ServiceDescriptorProto.is(descriptor)) {
                             // service type
-                            genServiceType.generateServiceType(outMain, descriptor);
+                            genServiceTypeHttp.generateServiceType(outMain, descriptor);
                             // http
                             const clientHttpStyles = optionResolver.getClientStyles(descriptor);
                             if (clientHttpStyles.includes(ClientStyle.GENERIC_CLIENT)) {
@@ -380,7 +384,6 @@ export class ProtobuftsPlugin extends PluginBase {
             
 
         }
-
 
         // plugins should only return files requested to generate
         // unless our option "generate_dependencies" is set.

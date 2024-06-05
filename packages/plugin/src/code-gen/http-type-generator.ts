@@ -10,13 +10,12 @@ import {
 import {Interpreter} from "../interpreter";
 import {CommentGenerator} from "./comment-generator";
 import * as ts from "typescript";
-import {MethodInfoGenerator} from "./method-info-generator";
 import {GeneratorBase} from "./generator-base";
+import { lowerCamelCase } from "@protobuf-ts/runtime";
 
 
-export class ServiceTypeGenerator extends GeneratorBase {
+export class ServiceTypeGeneratorHttp extends GeneratorBase {
 
-    private readonly methodInfoGenerator: MethodInfoGenerator;
 
 
     constructor(symbols: SymbolTable, registry: DescriptorRegistry, imports: TypeScriptImports, comments: CommentGenerator, interpreter: Interpreter,
@@ -24,7 +23,6 @@ export class ServiceTypeGenerator extends GeneratorBase {
                     runtimeHttpImportPath: string;
                 }) {
         super(symbols, registry, imports, comments, interpreter);
-        this.methodInfoGenerator = new MethodInfoGenerator(this.registry, this.imports)
     }
 
 
@@ -43,14 +41,14 @@ export class ServiceTypeGenerator extends GeneratorBase {
             // typeName
             ts.createStringLiteral(interpreterType.typeName), 
             /**
-             * {
+             * [{
                     name: 'Report',
                     options: { 'google.api.http': { post: '/v1/rum/report', body: '*' } },
                     I: ReportRequest,
-                    O: ReportReply,
-                },
+                    O: ReportReply, 
+                },]
              */
-            this.methodInfoGenerator.createMethodInfoLiterals(source, interpreterType.methods)
+            this.createMethodInfoLiterals(source, interpreterType.methods)
         ];
 
         if (Object.keys(interpreterType.options).length) {
@@ -84,6 +82,86 @@ export class ServiceTypeGenerator extends GeneratorBase {
         addCommentBlockAsJsDoc(exportConst, comment);
 
         return;
+    }
+
+    createMethodInfoLiterals(source: TypescriptFile, methodInfos: readonly any[]): ts.ArrayLiteralExpression {
+        const mi = methodInfos
+            .map(mi => ServiceTypeGeneratorHttp.denormalizeMethodInfo(mi))
+            .map(mi => this.createMethodInfoLiteral(source, mi));
+        return ts.createArrayLiteral(mi, true);
+    }
+
+
+    createMethodInfoLiteral(source: TypescriptFile, methodInfo: any): ts.ObjectLiteralExpression {
+        methodInfo = ServiceTypeGeneratorHttp.denormalizeMethodInfo(methodInfo);
+        const properties: ts.PropertyAssignment[] = [];
+
+        // name: The name of the method as declared in .proto
+        // localName: The name of the method in the runtime.
+        // idempotency: The idempotency level as specified in .proto.
+        // serverStreaming: Was the rpc declared with server streaming?
+        // clientStreaming: Was the rpc declared with client streaming?
+        // options: Contains custom method options from the .proto source in JSON format.
+        for (let key of ["name", "localName", "idempotency", "serverStreaming", "clientStreaming", "options"] as const) {
+            if (methodInfo[key] !== undefined) {
+                properties.push(ts.createPropertyAssignment(
+                    key, typescriptLiteralFromValue(methodInfo[key])
+                ));
+            }
+        }
+
+        const idx = methodInfo.I.typeName.split('.').length- 1
+
+        // I: The generated type handler for the input message.
+        // TODO change
+        properties.push(ts.createPropertyAssignment(
+            ts.createIdentifier('I'),
+            ts.createObjectLiteral([
+                ts.createPropertyAssignment(
+                    ts.createIdentifier('typeName'),
+                    ts.createStringLiteral(methodInfo.I.typeName.split('.')[idx])
+                )
+            ], false) // false 表示单行
+        ));
+
+        // O: The generated type handler for the output message.
+        // TODO change
+        properties.push(ts.createPropertyAssignment(
+            ts.createIdentifier('O'),
+            ts.createObjectLiteral([
+                ts.createPropertyAssignment(
+                    ts.createIdentifier('typeName'),
+                    ts.createStringLiteral(methodInfo.I.typeName.split('.')[idx])
+                )
+            ], false) // false 表示单行
+        ));
+
+        return ts.createObjectLiteral(properties, false);
+    }
+
+    /**
+     * Turn normalized method info returned by normalizeMethodInfo() back into
+     * the minimized form.
+     */
+    static denormalizeMethodInfo(info: any): any{
+        let partial: any = {...info};
+        delete partial.service;
+        if (info.localName === lowerCamelCase(info.name)) {
+            delete partial.localName;
+        }
+        if (!info.serverStreaming) {
+            delete partial.serverStreaming;
+        }
+        if (!info.clientStreaming) {
+            delete partial.clientStreaming;
+        }
+        if (info.options && Object.keys(info.options).length) {
+            delete partial.info;
+        }
+        if (info.idempotency === undefined) {
+            delete partial.idempotency;
+        }
+        return partial;
     }
 
 }

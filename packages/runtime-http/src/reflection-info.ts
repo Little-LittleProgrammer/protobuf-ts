@@ -1,5 +1,3 @@
-import type {IMessageType, JsonValue} from "@protobuf-ts/runtime";
-import {lowerCamelCase} from "@protobuf-ts/runtime";
 
 /**
  * Describes a protobuf service for runtime reflection.
@@ -21,8 +19,21 @@ export interface ServiceInfo {
     /**
      * Contains custom service options from the .proto source in JSON format.
      */
-    readonly options: { [extensionName: string]: JsonValue };
+    readonly options: { [extensionName: string]:  JsonValue};
 }
+
+export type JsonValue = number | string | boolean | null | JsonObject | JsonArray;
+
+/**
+ * Represents a JSON object.
+ */
+export type JsonObject = { [k: string]: JsonValue };
+
+
+// should be replaced by JsonValue = ... JsonValue[] but that throws off jasmine toEqual with TS2589
+interface JsonArray extends Array<JsonValue> {
+}
+
 
 /**
  * Describes a protobuf service method for runtime reflection.
@@ -64,7 +75,9 @@ export interface MethodInfo<I extends object = any, O extends object = any> {
      * The generated type handler for the input message.
      * Provides methods to encode / decode binary or JSON format.
      */
-    readonly I: IMessageType<I>;
+    readonly I: {
+        typeName: string
+    } ;
 
     /**
      * Contains custom method options from the .proto source in JSON format.
@@ -103,69 +116,24 @@ export function normalizeMethodInfo<I extends object = any, O extends object = a
     return m as MethodInfo<I, O>;
 }
 
-
-/**
- * Read custom method options from a generated service client.
- *
- * @deprecated use readMethodOption()
- */
-export function readMethodOptions<T extends object>(service: ServiceInfo, methodName: string | number, extensionName: string, extensionType: IMessageType<T>): T | undefined {
-    const options = service.methods.find((m, i) => m.localName === methodName || i === methodName)?.options;
-    return options && options[extensionName] ? extensionType.fromJson(options[extensionName]) : undefined;
-}
-
-/**
- * Read a custom method option.
- *
- * ```proto
- * service MyService {
- *   rpc Get (Req) returns (Res) {
- *      option (acme.rpc_opt) = true;
- *   };
- * }
- * ```
- *
- * ```typescript
- * let val = readMethodOption(MyService, 'get', 'acme.rpc_opt')
- * ```
- */
-export function readMethodOption<T extends object>(service: ServiceInfo, methodName: string | number, extensionName: string): JsonValue | undefined;
-export function readMethodOption<T extends object>(service: ServiceInfo, methodName: string | number, extensionName: string, extensionType: IMessageType<T>): T | undefined;
-export function readMethodOption<T extends object>(service: ServiceInfo, methodName: string | number, extensionName: string, extensionType?: IMessageType<T>): T | JsonValue | undefined {
-    const options = service.methods.find((m, i) => m.localName === methodName || i === methodName)?.options;
-    if (!options) {
-        return undefined;
+export function lowerCamelCase(snakeCase: string): string {
+    let capNext = false;
+    const sb = [];
+    for (let i = 0; i < snakeCase.length; i++) {
+        let next = snakeCase.charAt(i);
+        if (next == '_') {
+            capNext = true;
+        } else if (/\d/.test(next)) {
+            sb.push(next);
+            capNext = true;
+        } else if (capNext) {
+            sb.push(next.toUpperCase());
+            capNext = false;
+        } else if (i == 0) {
+            sb.push(next.toLowerCase());
+        } else {
+            sb.push(next);
+        }
     }
-    const optionVal = options[extensionName];
-    if (optionVal === undefined) {
-        return optionVal;
-    }
-    return extensionType ? extensionType.fromJson(optionVal) : optionVal;
-}
-
-/**
- * Read a custom service option.
- *
- * ```proto
- * service MyService {
- *   option (acme.service_opt) = true;
- * }
- * ```
- *
- * ```typescript
- * let val = readServiceOption(MyService, 'acme.service_opt')
- * ```
- */
-export function readServiceOption<T extends object>(service: ServiceInfo, extensionName: string): JsonValue | undefined;
-export function readServiceOption<T extends object>(service: ServiceInfo, extensionName: string, extensionType: IMessageType<T>): T | undefined;
-export function readServiceOption<T extends object>(service: ServiceInfo, extensionName: string, extensionType?: IMessageType<T>): T | JsonValue | undefined {
-    const options = service.options;
-    if (!options) {
-        return undefined;
-    }
-    const optionVal = options[extensionName];
-    if (optionVal === undefined) {
-        return optionVal;
-    }
-    return extensionType ? extensionType.fromJson(optionVal) : optionVal;
+    return sb.join('');
 }

@@ -6,7 +6,7 @@ import type {RpcMetadata} from "./rpc-metadata";
 export class RpcError extends Error {
 
     /**
-     * A status code as string. The value depends on the `RpcTransport` being
+     * A status code as string. The value depends on the `HttpTransport` being
      * used.
      *
      * For gRPC, it will be the string value of a StatusCode enum value

@@ -1,9 +1,9 @@
 API_PROTO_FILES=$(shell find protos -name *.proto)
 
-default: npm-install generate
+default: npm-build generate
 
-npm-install:
-	npm i
+npm-build:
+	npm run build
 
 generate:
 	# 只生成ts的message
@@ -12,5 +12,6 @@ generate:
 		   --ts_out=. \
 		   --ts_opt=only_http \
 	    	$(API_PROTO_FILES)
+	node ./bin/index.js
 
 

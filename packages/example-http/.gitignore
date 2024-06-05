@@ -6,4 +6,5 @@
 /build/**/*.js.map
 *.descriptorset
 *.codegenreq
+dist/*
 

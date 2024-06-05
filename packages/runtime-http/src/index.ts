@@ -4,10 +4,10 @@
 
 
 export {ServiceType} from './service-type';
-export {MethodInfo, PartialMethodInfo, ServiceInfo, readMethodOptions, readMethodOption, readServiceOption} from './reflection-info';
+export {MethodInfo, PartialMethodInfo, ServiceInfo} from './reflection-info';
 export {RpcError} from './rpc-error';
 export {RpcMetadata} from './rpc-metadata';
-export {RpcOptions} from './rpc-options';
+export {HttpOptions} from './rpc-options';
 export {RpcStatus} from './rpc-status';
-export {RpcTransport} from './rpc-transport';
+export {HttpTransport, VAxios, VAxiosInstance} from './rpc-transport';
 export {HttpResult} from './http-result';
