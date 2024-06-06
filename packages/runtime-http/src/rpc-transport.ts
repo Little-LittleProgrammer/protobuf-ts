@@ -47,8 +47,22 @@ import type {HttpOptions} from "./rpc-options";
 //         input: I, options: HttpOptions): HttpResult<I>
 // }
 
+export interface UploadFile {
+    // Other parameters
+    data?: Record<string, any>;
+    // File parameter interface field name
+    name?: string;
+    action?: string;
+    // file name
+    file: File | Blob;
+    // file name
+    filename?: string;
+    [key: string]: any;
+}
+
 export interface VAxiosInstance {
     request<T>(config: Record<string, any>, options?: Record<string, any>): Promise<T>
+    uploadFile<T>(config: Record<string, any>, params?: UploadFile): Promise<T>
 }
 
 export type VAxios = new (options: HttpOptions) => VAxiosInstance
@@ -69,6 +83,17 @@ export class HttpTransport {
     request<T>(method: MethodInfo, input: any, opt?: HttpOptions['requestOptions']) {
         let url = this.makeUrl(method);
         let mt = this.makeMethod(method);
+        let isUpload = this.isUpload(method);
+        if (isUpload) {
+            return this.vAxios.uploadFile<T>({
+                method: 'POST',
+                url: url,
+                headers: {
+                    'Content-type': 'multipart/form-data;charset=UTF-8',
+                },
+                requestOptions: opt,
+            }, input)
+        }
         return this.vAxios.request<T>({
             url,
             method: mt,
@@ -93,6 +118,16 @@ export class HttpTransport {
         }
         return ''
     }
+
+    protected isUpload(method: MethodInfo): boolean {
+        if (method.options['google.api.http']) {
+            if ((method.options['google.api.http'] as any).body === 'file') {
+                return true
+            }
+        }
+        return false
+    }
+    
     /**
      * Create an URI for a RPC call.
      *
