@@ -80,21 +80,21 @@ export class HttpTransport {
         
     }
     
-    request<T>(method: MethodInfo, input: any, opt?: HttpOptions['requestOptions']) {
+    request<I extends Record<string, any>, O extends Record<string, any>>(method: MethodInfo, input: I, opt?: HttpOptions['requestOptions']) {
         let url = this.makeUrl(method);
         let mt = this.makeMethod(method);
         let isUpload = this.isUpload(method);
         if (isUpload) {
-            return this.vAxios.uploadFile<T>({
+            return this.vAxios.uploadFile<O>({
                 method: 'POST',
                 url: url,
                 headers: {
                     'Content-type': 'multipart/form-data;charset=UTF-8',
                 },
                 requestOptions: opt,
-            }, input)
+            }, input as unknown as UploadFile)
         }
-        return this.vAxios.request<T>({
+        return this.vAxios.request<O>({
             url,
             method: mt,
             params: input

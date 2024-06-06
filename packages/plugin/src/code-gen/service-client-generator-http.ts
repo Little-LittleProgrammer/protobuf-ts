@@ -222,8 +222,20 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 			this.options.runtimeHttpImportPath,
 			true
 		);
+        let UploadFile = this.imports.name(
+			source,
+			'UploadFile',
+			this.options.runtimeHttpImportPath,
+			true
+		);
 		let methodIndex = methodInfo.service.methods.indexOf(methodInfo);
 		assert(methodIndex >= 0);
+
+
+        let isUpload = this.isUpload(methodInfo);
+        const inType = isUpload 
+        ? ts.createTypeReferenceNode(ts.createIdentifier(UploadFile), undefined) 
+        : this.makeI(source, methodInfo, true)
 
 		return ts.createMethod(
 			undefined,
@@ -239,7 +251,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 					undefined,
 					ts.createIdentifier('input'),
 					undefined,
-					this.makeI(source, methodInfo, true)
+					inType
 				),
 				ts.createParameter(
 					undefined,
@@ -292,6 +304,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 						ts.createCall(
                             ts.createPropertyAccess(ts.createPropertyAccess(ts.createThis(), 'defHttp'), 'request'),
 							[
+								inType,
 								this.makeO(source, methodInfo, true),
 							],
 							[
@@ -306,6 +319,17 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 			)
 		);
 	}
+
+
+
+    protected isUpload(method: MethodInfo): boolean {
+        if (method.options['google.api.http']) {
+            if ((method.options['google.api.http'] as any).body && (method.options['google.api.http'] as any).body === 'file') {
+                return true
+            }
+        }
+        return false
+    }
 
     protected makeI(source: TypescriptFile, methodInfo: MethodInfo, isTypeOnly = false): ts.TypeReferenceNode {
         return ts.createTypeReferenceNode(ts.createIdentifier(this.imports.type(source,
