@@ -121,7 +121,7 @@ export class HttpTransport {
 
     protected isUpload(method: MethodInfo): boolean {
         if (method.options['google.api.http']) {
-            if ((method.options['google.api.http'] as any).body === 'file') {
+            if ((method.options['google.api.http'] as any).body && (method.options['google.api.http'] as any).body === 'file') {
                 return true
             }
         }

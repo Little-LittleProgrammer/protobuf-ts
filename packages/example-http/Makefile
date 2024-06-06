@@ -1,6 +1,6 @@
 API_PROTO_FILES=$(shell find protos -name *.proto)
 
-default: npm-build generate
+default:  generate npm-build
 
 npm-build:
 	npm run build

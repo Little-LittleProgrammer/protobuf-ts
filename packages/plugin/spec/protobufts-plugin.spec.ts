@@ -116,7 +116,6 @@ describe('protobuftsPlugin', function () {
         it(`no global typescript errors`, function () {
             let genNames = generatedFiles.map(f => f.getFilename());
             let globals = diagnostics.filter(d => !genNames.includes(d.file?.fileName ?? ''))
-            console.log(genNames)
             if (globals.length > 0) fail(ts.formatDiagnostics(globals, host));
         })
 

@@ -15,10 +15,11 @@ service Rum {
       body: "*",
     };
   }
-  // 下报接口
+  // 上传接口
   rpc transforming(ReportRequest) returns(ReportReply) {
     option (google.api.http) = {
-      get: "/v1/rum/transforming",
+      post: "/v1/rum/transforming",
+      body: "file",
     };
   }
 }

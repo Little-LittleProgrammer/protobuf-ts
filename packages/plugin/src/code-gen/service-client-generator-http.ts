@@ -123,7 +123,6 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
             ts.createProperty(
                 undefined, [ts.createModifier(ts.SyntaxKind.PublicKeyword)], 'defHttp',
                 undefined, ts.createTypeReferenceNode(ts.createIdentifier(HttpTransport), undefined), undefined),
-
             // constructor(@Inject(RPC_TRANSPORT)  HttpTransport) {}
             ts.createConstructor(
                 undefined, undefined,
@@ -147,7 +146,22 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
                     ts.createStatement(ts.createAssignment(
                         ts.createPropertyAccess(ts.createThis(), 'defHttp'),
                         ts.createNew(ts.createIdentifier('HttpTransport'), undefined, [ts.createIdentifier("vAxios"), ts.createIdentifier('opt')])
-                    ))
+                    )),
+                    ...interpreterType.methods.map(mi => {
+                        const methodsName = mi.localName;
+                        const access = ts.createPropertyAccess(ts.createThis(), methodsName)
+                        return ts.createStatement(ts.createAssignment(
+                            access,
+                            ts.createCall(
+                                ts.createPropertyAccess(
+                                    access,
+                                    ts.createIdentifier("bind")
+                                ),
+                                undefined, // 类型参数，这里不需要
+                                [ts.createThis()] // bind 方法的参数列表，这里只有一个 this
+                            )
+                        ))
+                    })
                 ], true)
             ),
 
