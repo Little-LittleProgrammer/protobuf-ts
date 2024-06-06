@@ -222,17 +222,20 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 			this.options.runtimeHttpImportPath,
 			true
 		);
-        let UploadFile = this.imports.name(
-			source,
-			'UploadFile',
-			this.options.runtimeHttpImportPath,
-			true
-		);
+        let UploadFile = ''
 		let methodIndex = methodInfo.service.methods.indexOf(methodInfo);
 		assert(methodIndex >= 0);
 
 
         let isUpload = this.isUpload(methodInfo);
+        if (isUpload) {
+            UploadFile = this.imports.name(
+                source,
+                'UploadFile',
+                this.options.runtimeHttpImportPath,
+                true
+            );
+        }
         const inType = isUpload 
         ? ts.createTypeReferenceNode(ts.createIdentifier(UploadFile), undefined) 
         : this.makeI(source, methodInfo, true)

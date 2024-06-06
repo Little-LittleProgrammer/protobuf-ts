@@ -9,5 +9,5 @@ export {RpcError} from './rpc-error';
 export {RpcMetadata} from './rpc-metadata';
 export {HttpOptions} from './rpc-options';
 export {RpcStatus} from './rpc-status';
-export {HttpTransport, VAxios, VAxiosInstance} from './rpc-transport';
-export {HttpResult} from './http-result';
+export {HttpTransport} from './rpc-transport';
+export {HttpResult, VAxios, VAxiosInstance, UploadFile} from './http-result';

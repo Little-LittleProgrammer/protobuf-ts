@@ -1,3 +1,4 @@
+import type { VAxiosInstance, VAxios, UploadFile } from "./http-result";
 import { lowerCamelCase } from "./reflection-info";
 import type {MethodInfo}  from "./reflection-info";
 import type {HttpOptions} from "./rpc-options";
@@ -47,25 +48,6 @@ import type {HttpOptions} from "./rpc-options";
 //         input: I, options: HttpOptions): HttpResult<I>
 // }
 
-export interface UploadFile {
-    // Other parameters
-    data?: Record<string, any>;
-    // File parameter interface field name
-    name?: string;
-    action?: string;
-    // file name
-    file: File | Blob;
-    // file name
-    filename?: string;
-    [key: string]: any;
-}
-
-export interface VAxiosInstance {
-    request<T>(config: Record<string, any>, options?: Record<string, any>): Promise<T>
-    uploadFile<T>(config: Record<string, any>, params?: UploadFile): Promise<T>
-}
-
-export type VAxios = new (options: HttpOptions) => VAxiosInstance
 export class HttpTransport {
     
     defaultOptions: HttpOptions;
