@@ -1,6 +1,6 @@
 {
   "name": "@protobuf-ts/example-http",
-  "version": "2.9.7-alpha.1",
+  "version": "2.9.7-alpha.2",
   "description": "",
   "private": true,
   "scripts": {
@@ -10,12 +10,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@protobuf-ts/runtime": "^2.9.7-alpha.1",
-    "@protobuf-ts/runtime-http": "^2.9.7-alpha.1"
+    "@protobuf-ts/runtime": "^2.9.7-alpha.2",
+    "@protobuf-ts/runtime-http": "^2.9.7-alpha.2"
   },
   "devDependencies": {
-    "@protobuf-ts/plugin": "^2.9.7-alpha.1",
-    "@protobuf-ts/protoc": "^2.9.7-alpha.1",
+    "@protobuf-ts/plugin": "^2.9.7-alpha.2",
+    "@protobuf-ts/protoc": "^2.9.7-alpha.2",
     "@q-front-npm-configs/rollup": "^1.2.1",
     "@q-front-npm-configs/tsconfig": "1.0.0",
     "rollup": "^3.29.4",
