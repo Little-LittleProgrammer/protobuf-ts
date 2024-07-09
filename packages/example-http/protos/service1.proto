@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package rum;
+
+import "google/api/annotations.proto";
+import "message.proto";
+
+option go_package = "rum-go/api;rum";
+
+service Rum1 {
+  // 上报接口
+  rpc ReportAbc(ReportRequest) returns(ReportReply) {
+    option (google.api.http) = {
+      post: "/v1/rum/report",
+      body: "*",
+    };
+  }
+  // 上传接口
+  rpc transforming(ReportRequest) returns(ReportReply) {
+    option (google.api.http) = {
+      post: "/v1/rum/transforming",
+      body: "file",
+    };
+  }
+}

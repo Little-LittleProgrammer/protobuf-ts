@@ -8,7 +8,7 @@ export interface ServiceInfo {
      * The protobuf type name of the service, including package name if
      * present.
      */
-    readonly typeName: string;
+    readonly typeName?: string;
 
     /**
      * Information for each rpc method of the service, in the order of
@@ -19,7 +19,7 @@ export interface ServiceInfo {
     /**
      * Contains custom service options from the .proto source in JSON format.
      */
-    readonly options: { [extensionName: string]:  JsonValue};
+    readonly options?: { [extensionName: string]:  JsonValue};
 }
 
 export type JsonValue = number | string | boolean | null | JsonObject | JsonArray;

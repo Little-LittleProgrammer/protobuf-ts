@@ -8,8 +8,13 @@ import { createLocalTypeName } from './local-type-name';
 import type { MethodInfo } from '@protobuf-ts/runtime-rpc';
 
 export class ServiceClientGeneratorHttp extends GeneratorBase {
-	readonly symbolKindInterface = 'client-http-interface';
-	readonly symbolKindImplementation = 'client-http';
+	readonly symbolKindInterface = 'client-interface';
+	readonly symbolKindImplementation = 'client';
+    basename: string = '';
+    httpFileInfo: Record<'constructor'|'fileDescriptor', any> = {
+        constructor: [],
+        fileDescriptor: []
+    }
 
 	constructor(
 		symbols: SymbolTable,
@@ -26,11 +31,65 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 	}
 
     registerSymbols(source: TypescriptFile, descriptor: ServiceDescriptorProto): void {
-        const basename = createLocalTypeName(descriptor, this.registry);
-        const interfaceName = `I${basename}Client`;
-        const implementationName = `${basename}Client`;
+        this.basename  = createLocalTypeName(descriptor, this.registry);
+        const interfaceName = `I${this.basename}Client`;
+        const implementationName = `${this.basename}Client`;
         this.symbols.register(interfaceName, descriptor, source, this.symbolKindInterface);
         this.symbols.register(implementationName, descriptor, source, this.symbolKindImplementation);
+        this.httpFileInfo.fileDescriptor.push(descriptor)
+    }
+
+    generateAllClass(source: TypescriptFile): ts.ClassDeclaration {
+        const extendsName: string[][] = [];
+        this.imports.name(source, 'HttpOptions', this.options.runtimeHttpImportPath, true),
+        this.imports.name(source, 'VAxios', this.options.runtimeHttpImportPath, true),
+        this.imports.name(source, 'VAxiosInstance', this.options.runtimeHttpImportPath, true);
+        this.httpFileInfo.fileDescriptor.forEach((descriptor: ServiceDescriptorProto) => {
+            const ServiceClient = this.imports.type(source, descriptor, this.symbolKindImplementation);
+            const ServiceName = this.symbols.get(descriptor).name;
+            const name = ServiceName.charAt(0).toLowerCase() + ServiceName.slice(1)
+            extendsName.push([name, ServiceClient])
+        })
+       
+        const classDecorators: ts.Decorator[] = [];
+
+        const memebers = [
+            // 生成 public type
+            ...extendsName.map(([n, k]) => {
+                return ts.createProperty(
+                    undefined, undefined, ts.createIdentifier(n),
+                    undefined, ts.createTypeReferenceNode(
+                        ts.createIdentifier(k),
+                        undefined
+                    ),undefined
+                )
+            }),
+            // 生成 constructor
+            ts.createConstructor(
+                undefined, undefined,
+                this.httpFileInfo.constructor[0],
+                ts.createBlock([
+                    ...extendsName.map(([n, k]) => {
+                        const access = ts.createPropertyAccess(ts.createThis(), n)
+                        return ts.createStatement(ts.createAssignment(
+                            access,
+                            ts.createNew(ts.createIdentifier(k), undefined, this.httpFileInfo.constructor[1])
+                        ))
+                    })
+                ], true)
+            ),
+        ]
+
+        const statement = ts.createClassDeclaration(
+            classDecorators,
+            [ts.createModifier(ts.SyntaxKind.ExportKeyword)],
+            'HttpClient',
+            undefined,
+            undefined,
+            memebers
+        );
+        source.addStatement(statement);
+        return statement
     }
 
     /**
@@ -93,15 +152,26 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
 
         const classDecorators: ts.Decorator[] = [];
         const constructorDecorators: ts.Decorator[] = [];
+
+        const constructorParamsAll = [ts.createParameter(
+            constructorDecorators,
+            undefined,
+            undefined, ts.createIdentifier("vAxios"), undefined,
+            ts.createUnionTypeNode([ // 参数类型：VAxios | VAxiosInstance
+                ts.createTypeReferenceNode(VAxios, undefined),
+                ts.createTypeReferenceNode(VAxiosInstance, undefined)
+            ]),
+            undefined
+        ), ts.createParameter(
+            constructorDecorators,
+            undefined,
+            undefined, ts.createIdentifier("opt"), undefined,
+            ts.createTypeReferenceNode(ts.createIdentifier(HttpOptions), undefined),
+            ts.createObjectLiteral([]) 
+        )]
+        const constructorParams = [ts.createIdentifier("vAxios"), ts.createIdentifier('opt')]
+        this.httpFileInfo.constructor = [constructorParamsAll, constructorParams]
         const members: ts.ClassElement[] = [
-            // typeName = Haberdasher.typeName;
-            ts.createProperty(
-                undefined, undefined, ts.createIdentifier("typeName"),
-                undefined, undefined, ts.createPropertyAccess(
-                    ts.createIdentifier(ServiceType),
-                    ts.createIdentifier("typeName")
-                )
-            ),
 
             // methods = Haberdasher.methods;
             ts.createProperty(
@@ -112,40 +182,17 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
                 )
             ),
 
-            // options = Haberdasher.options;
-            ts.createProperty(
-                undefined, undefined, ts.createIdentifier("options"),
-                undefined, undefined, ts.createPropertyAccess(
-                    ts.createIdentifier(ServiceType),
-                    ts.createIdentifier("options")
-                )
-            ),
             ts.createProperty(
                 undefined, [ts.createModifier(ts.SyntaxKind.PublicKeyword)], 'defHttp',
                 undefined, ts.createTypeReferenceNode(ts.createIdentifier(HttpTransport), undefined), undefined),
             // constructor(@Inject(RPC_TRANSPORT)  HttpTransport) {}
             ts.createConstructor(
                 undefined, undefined,
-                [ts.createParameter(
-                    constructorDecorators,
-                    undefined,
-                    undefined, ts.createIdentifier("vAxios"), undefined,
-                    ts.createUnionTypeNode([ // 参数类型：VAxios | VAxiosInstance
-                        ts.createTypeReferenceNode(VAxios, undefined),
-                        ts.createTypeReferenceNode(VAxiosInstance, undefined)
-                    ]),
-                    undefined
-                ), ts.createParameter(
-                    constructorDecorators,
-                    undefined,
-                    undefined, ts.createIdentifier("opt"), undefined,
-                    ts.createTypeReferenceNode(ts.createIdentifier(HttpOptions), undefined),
-                    ts.createObjectLiteral([]) 
-                )],
+                constructorParamsAll,
                 ts.createBlock([
                     ts.createStatement(ts.createAssignment(
                         ts.createPropertyAccess(ts.createThis(), 'defHttp'),
-                        ts.createNew(ts.createIdentifier('HttpTransport'), undefined, [ts.createIdentifier("vAxios"), ts.createIdentifier('opt')])
+                        ts.createNew(ts.createIdentifier('HttpTransport'), undefined, constructorParams)
                     )),
                     ...interpreterType.methods.map(mi => {
                         const methodsName = mi.localName;
@@ -342,7 +389,6 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
         )), undefined);
     }
 
-    // TODO: methodInfo.O.typeName不存在, 需要更改MessageType
     protected makeO(source: TypescriptFile, methodInfo: MethodInfo, isTypeOnly = false): ts.TypeReferenceNode {
         return ts.createTypeReferenceNode(ts.createIdentifier(this.imports.type(source,
             this.registry.resolveTypeName(methodInfo.O.typeName),

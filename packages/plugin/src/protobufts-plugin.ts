@@ -263,7 +263,6 @@ export class ProtobuftsPlugin extends PluginBase {
 
         let tsFiles: OutFile[] = [];
 
-
         // ensure unique file names
         for (let fileDescriptor of registry.allFiles()) {
             const base = fileDescriptor.name!.replace('.proto', '') + (options.addPbSuffix ? "_pb" : "");
@@ -411,6 +410,11 @@ export class ProtobuftsPlugin extends PluginBase {
             request.fileToGenerate.includes(of.fileDescriptor.name!)
             || registry.isFileUsed(of.fileDescriptor, outFileDescriptors)
         );
+        if (options.onlyHttp) {
+            const httpAllClient = new OutFile('http-client.ts', genClientHttp.httpFileInfo.fileDescriptor[0], registry, options);
+            genClientHttp.generateAllClass(httpAllClient)
+            tsFiles.push(httpAllClient)
+        }
 
         return this.transpile(tsFiles, options);
     }

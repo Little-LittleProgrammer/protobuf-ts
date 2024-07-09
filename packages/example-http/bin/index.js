@@ -7,7 +7,7 @@ const tsFiles = files.filter(file => path.extname(file) === '.ts');
 const outputPath =  path.resolve(process.cwd(), '.', 'index.ts')
 let str = '';
 for (let c of tsFiles) {
-    if (c.includes('index')) {
+    if (c.includes('index') || c.includes('.client')) {
         continue
     }
     const idx = c.lastIndexOf('.');
