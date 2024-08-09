@@ -11,6 +11,7 @@ generate:
 	       --proto_path=./third_party \
 		   --ts_out=. \
 		   --ts_opt=only_http \
+		   --ts_opt=long_type_number \
 	    	$(API_PROTO_FILES)
 	node ./bin/index.js
 

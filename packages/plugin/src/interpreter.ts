@@ -540,6 +540,8 @@ export class Interpreter {
             info.oneof = undefined;
 
         }
+        // Warning 为了方便更改所有选项为可选
+        // info.opt = true
 
         return info as rt.PartialFieldInfo;
     }
