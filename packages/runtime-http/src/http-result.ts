@@ -1,9 +1,30 @@
 import type { HttpOptions } from "./rpc-options";
 
-export class HttpResult<T extends object = object> extends Promise<T> {
+type RefResult<T> = {
+    /**
+     * 用于 Vue Ref 场景, 如对象是ref, 再使用此属性
+     */
+    value: T
+} 
 
+export interface Result<T> {
+    /**
+     * code 响应码
+     * @generator code === 200
+     */
+    code: number;
+    /**
+     * data 实际数据
+     */
+    data: T & RefResult<T>;
+    /**
+     * code 响应消息
+     * @generator msg = 'success'
+     */
+    msg: string;
 }
 
+export type HttpResult<T> = Promise<Result<T> & RefResult<Result<T>>>
 
 export interface UploadFile {
     // Other parameters
@@ -19,8 +40,8 @@ export interface UploadFile {
 }
 
 export interface VAxiosInstance {
-    request<T>(config: Record<string, any>, options?: Record<string, any>): Promise<T>
-    uploadFile<T>(config: Record<string, any>, params?: UploadFile): Promise<T>
+    request<T>(config: Record<string, any>, options?: Record<string, any>): HttpResult<T>
+    uploadFile<T>(config: Record<string, any>, params?: UploadFile): HttpResult<T>
 }
 
 export type VAxios = new (options: HttpOptions) => VAxiosInstance
