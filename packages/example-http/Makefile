@@ -12,6 +12,7 @@ generate:
 		   --ts_out=. \
 		   --ts_opt=only_http \
 		   --ts_opt=long_type_number \
+		   --ts_opt=use_proto_field_name \
 	    	$(API_PROTO_FILES)
 	node ./bin/index.js
 
