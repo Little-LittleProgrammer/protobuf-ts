@@ -1,3 +1,4 @@
+// 根据服务端返回结构体写入
 import type { HttpOptions } from "./rpc-options";
 
 type RefResult<T> = {
@@ -6,6 +7,16 @@ type RefResult<T> = {
      */
     value: T
 } 
+
+interface ResultErrors {
+    id: string;
+    code: string;
+    level: string;
+    status: string;
+    title: string;
+    popup_title: string;
+    details: string;
+}
 
 export interface Result<T> {
     /**
@@ -22,6 +33,7 @@ export interface Result<T> {
      * @generator msg = 'success'
      */
     msg: string;
+    errors?: ResultErrors 
 }
 
 export type HttpResult<T> = Promise<Result<T> & RefResult<Result<T>>>
