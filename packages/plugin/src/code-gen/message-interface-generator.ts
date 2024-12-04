@@ -58,7 +58,6 @@ export class MessageInterfaceGenerator extends GeneratorBase {
             members: ts.TypeElement[] = []; // the interface members
 
         for (let fieldInfo of interpreterType.fields) {
-            console.log('fieldInfo',fieldInfo)
             let fieldDescriptor = descriptor.field.find(fd => fd.number === fieldInfo.no);
             assert(fieldDescriptor !== undefined);
 
