@@ -10,6 +10,16 @@
 
 > `protobuf-ts` 是一个围绕 `.proto -> TypeScript 代码 -> 运行时消息/RPC 调用` 的工具链；`only_http` 则是在这条标准链路旁边分出来的一条“面向 HTTP SDK 生成”的专用分支。
 
+如果你想先快速了解项目、核心原理和常见问题，可以先读：
+
+- [docs/project-quickstart-and-faq.md](./project-quickstart-and-faq.md)
+
+如果你是第一次接触这块代码，建议先读：
+
+- [docs/http-only-mode-analysis/09-给初级程序员的原理讲稿.md](./http-only-mode-analysis/09-给初级程序员的原理讲稿.md)
+
+那篇文档按“能讲给别人听”的顺序写，先建立心智模型，再解释源码链路。读完后再回到本文，可以更容易把包结构、生成器、运行时边界串起来。
+
 ---
 
 ## 一、先建立全局视角
@@ -90,6 +100,8 @@ CodeGeneratorRequest
 - 把描述符组织成可遍历、可查询的结构
 - 提供类型名查找、源码注释查找、描述符关系查找
 - 提供 TypeScript AST 生成辅助能力
+
+>“描述符组织”指的是：protoc 已经把 .proto 文件解析成一堆 descriptor 对象之后，protobuf-ts 不直接散着用这些原始对象，而是把它们整理成一套方便查询、遍历和理解关系的结构。
 
 关键文件：
 

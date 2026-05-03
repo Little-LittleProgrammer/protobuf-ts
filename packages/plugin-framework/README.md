@@ -1,61 +1,52 @@
 @protobuf-ts/plugin-framework
 =============================
 
-A framework to create protoc plugins in typescript.
+一个用于使用 TypeScript 创建 protoc 插件的框架。
 
-The google protocol buffer compiler (protoc) has a plugin system. With a 
-protoc plugin, it is possible to generate code for .proto files in any 
-language, not just the ones supported directly by protoc. 
+Google Protocol Buffer 编译器 (protoc) 拥有一个插件系统。通过 
+protoc 插件，可以为 .proto 文件生成任何语言的代码，而不仅仅是 
+protoc 直接支持的语言。 
 
-A protoc plugin receives a `CodeGeneratorRequest` (a protobuf message) 
-via stdin and returns a `CodeGeneratorResponse` via stdout. 
+protoc 插件通过 stdin 接收 `CodeGeneratorRequest`（一个 protobuf 消息），
+并通过 stdout 返回 `CodeGeneratorResponse`。 
  
-This framework aims to make it as easy as possible to write a protoc 
-plugin in typescript. It has special support for generating typescript 
-code, but can be used to generate code in other languages. 
+本框架旨在让使用 TypeScript 编写 protoc 插件变得尽可能简单。它对生成 
+TypeScript 代码提供了特别支持，但也可用于生成其他语言的代码。 
 
 
 
-### Features
+### 特性
 
-- provides a symbol table that can be used to track generated types 
-  in any language
+- 提供符号表，可用于跟踪任何语言中生成的类型 
   
-- has special support for generating typescript code using the 
-  typescript compiler API. For example, it has a simple API to import 
-  objects from a package, or from the symbol table.
+- 对使用 TypeScript 编译器 API 生成 TypeScript 代码提供特别支持。
+  例如，它提供了一个简单的 API 来从包或符号表中导入对象。
 
-- provides a base class for plugins that supports parameters, error 
-  handling, supported features and easy setup.
+- 提供插件基类，支持参数、错误处理、支持的特性以及简单的设置。
 
-- builds a tree of descriptors so that it is trivial to lookup the 
-  parent of a nested message, for example.
+- 构建描述符树，从而可以轻松查找嵌套消息的父级等。
 
-- builds a lookup object to find the descriptor for a given type name 
+- 构建查找对象，以便查找给定类型名称的描述符 
 
-- provides a string format object that can print a message field like 
-  it was typed by the user.
+- 提供字符串格式化对象，可以像用户输入那样打印消息字段。
   
-- provides a source code comment lookup that can be used to easily 
-  find comments for a given element in a .proto
+- 提供源代码注释查找功能，可用于轻松查找 .proto 中给定元素的注释
 
-- provides convenience methods to check if a field was declared 
-  optional or as a oneof member 
+- 提供便捷方法，用于检查字段是否被声明为 optional 或作为 oneof 成员 
 
 
-### Getting started
+### 入门指南
 
-- Check the types and comments of [descriptor.proto](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/descriptor.proto)
-  and [plugin.proto](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/plugin.proto)
-  to get familiar with the plugin system of protoc.
-- Take a look at `descriptor-registry.ts` to see the if it can help you work with the 
-  descriptor protos that the compiler sends you.
-- Take a look at `plugin-base.ts` for a base class that can help with some plumbing.
-- Take a look at the source code of [protobuf-ts](https://github.com/timostamm/protobuf-ts/), which uses this framework.    
+- 查看 [descriptor.proto](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/descriptor.proto)
+  和 [plugin.proto](https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/compiler/plugin.proto) 的类型和注释，
+  以熟悉 protoc 的插件系统。
+- 查看 `descriptor-registry.ts`，看看它是否能帮助你处理编译器发送给你的描述符 proto。
+- 查看 `plugin-base.ts`，了解一个可以帮助处理一些基础工作的基类。
+- 查看使用本框架的 [protobuf-ts](https://github.com/timostamm/protobuf-ts/) 的源代码。    
 
 
-### Copyright
+### 版权
 
-- The files [plugin.ts](https://github.com/timostamm/protobuf-ts/blob/master/packages/plugin-framework/src/google/protobuf/compiler/plugin.ts) and [descriptor.ts](https://github.com/timostamm/protobuf-ts/blob/master/packages/plugin-framework/src/google/protobuf/descriptor.ts) are Copyright 2008 Google Inc., licensed under BSD-3-Clause
-- All other files are licensed under Apache-2.0, see [LICENSE](https://github.com/timostamm/protobuf-ts/blob/master/packages/plugin-framework/LICENSE). 
+- 文件 [plugin.ts](https://github.com/timostamm/protobuf-ts/blob/master/packages/plugin-framework/src/google/protobuf/compiler/plugin.ts) 和 [descriptor.ts](https://github.com/timostamm/protobuf-ts/blob/master/packages/plugin-framework/src/google/protobuf/descriptor.ts) 版权归 2008 Google Inc. 所有，采用 BSD-3-Clause 许可证授权
+- 所有其他文件均采用 Apache-2.0 许可证授权，详见 [LICENSE](https://github.com/timostamm/protobuf-ts/blob/master/packages/plugin-framework/LICENSE)。 
 
