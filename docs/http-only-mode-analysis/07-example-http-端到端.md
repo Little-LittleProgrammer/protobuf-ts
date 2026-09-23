@@ -101,8 +101,7 @@ transforming(input: UploadFile, options?: HttpOptions["requestOptions"]): HttpRe
 
 ```ts
 export class HttpClient {
-  rum: RumClient;
-  rum1: Rum1Client;
+  rum: { rum: RumClient; rum1: Rum1Client };
 }
 ```
 
@@ -118,16 +117,16 @@ const client = new HttpClient(vAxios, opt);
 
 如果用 `Report` 方法举例，完整调用过程是：
 
-1. 业务调用 `client.rum.report(input)`
+1. 业务调用 `client.rum.rum.report(input)`
 2. `RumClient.report()` 取 `this.methods[0]`
-3. 调 `this.defHttp.request(method, input, opt)`
+3. 调 `this._httpTransport.request(method, input, opt)`
 4. `HttpTransport.makeUrl()` 得到 `/v1/rum/report`
 5. `HttpTransport.makeMethod()` 得到 `POST`
 6. 调 `vAxios.request({ url, method, params: input }, opt)`
 
 如果用上传方法 `transforming`：
 
-1. 业务调用 `client.rum.transforming(fileInput)`
+1. 业务调用 `client.rum.rum.transforming(fileInput)`
 2. `RumClient.transforming()` 取 `this.methods[1]`
 3. 调 `HttpTransport.request()`
 4. `isUpload()` 判定为 `true`

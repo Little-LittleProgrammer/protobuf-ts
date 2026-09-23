@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package finance.v1;
+
+message ReportRequest {}
+message EmptyResp {}
+
+service ReportService {
+  rpc Get(ReportRequest) returns (EmptyResp);
+}

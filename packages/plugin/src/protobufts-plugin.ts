@@ -30,6 +30,7 @@ import * as ts from "typescript";
 import {assert} from "@protobuf-ts/runtime";
 import {WellKnownTypes} from "./message-type-extensions/well-known-types";
 import { ServiceClientGeneratorHttp } from "./code-gen/service-client-generator-http";
+import {generateHttpNamespaces} from './code-gen/http-namespace-generator';
 
 
 export class ProtobuftsPlugin extends PluginBase {
@@ -262,6 +263,7 @@ export class ProtobuftsPlugin extends PluginBase {
 
 
         let tsFiles: OutFile[] = [];
+        const mainFiles: OutFile[] = [];
 
         // ensure unique file names
         for (let fileDescriptor of registry.allFiles()) {
@@ -292,6 +294,7 @@ export class ProtobuftsPlugin extends PluginBase {
                 outClientRx = new OutFile(fileTable.get(fileDescriptor, 'rx-client').name, fileDescriptor, registry, options),
                 outClientGrpc = new OutFile(fileTable.get(fileDescriptor, 'grpc1-client').name, fileDescriptor, registry, options);
             tsFiles.push(outMain, outServerGeneric, outServerGrpc, outClientCall, outClientPromise, outClientRx, outClientGrpc);
+            mainFiles.push(outMain);
 
             registry.visitTypes(fileDescriptor, descriptor => {
                 // we are not interested in synthetic types like map entry messages
@@ -333,7 +336,7 @@ export class ProtobuftsPlugin extends PluginBase {
                             // 生成文件太大
                             // genMessageType.generateMessageType(outMain, descriptor, optionResolver.getOptimizeMode(fileDescriptor));
                         }
-                        if (ServiceDescriptorProto.is(descriptor)) {
+                        if (ServiceDescriptorProto.is(descriptor) && !options.forceDisableServices) {
                             // service type
                             genServiceTypeHttp.generateServiceType(outMain, descriptor);
                             // http
@@ -411,9 +414,19 @@ export class ProtobuftsPlugin extends PluginBase {
             || registry.isFileUsed(of.fileDescriptor, outFileDescriptors)
         );
         if (options.onlyHttp) {
-            const httpAllClient = new OutFile('http-client.ts', genClientHttp.httpFileInfo.fileDescriptor[0], registry, options);
-            genClientHttp.generateAllClass(httpAllClient)
-            tsFiles.push(httpAllClient)
+            const clients = genClientHttp.generatedClients.filter(client => tsFiles.some(file => file === client.source));
+            if (clients.length) {
+                const name = 'http-client.ts';
+                if (tsFiles.some(file => file.getFilename() === name)) {
+                    const error = new Error(`Cannot generate ${name}: a proto output already uses this filename.`);
+                    error.name = 'PluginMessageError';
+                    throw error;
+                }
+                const httpAllClient = new OutFile(name, registry.fileOf(clients[0].descriptor), registry, options);
+                genClientHttp.generateAllClass(httpAllClient, clients.map(client => client.descriptor));
+                tsFiles.push(httpAllClient);
+            }
+            tsFiles.push(...generateHttpNamespaces(mainFiles.filter(file => tsFiles.includes(file) && !file.isEmpty()), tsFiles, symbols, clients.length > 0, registry, options));
         }
 
         return this.transpile(tsFiles, options);

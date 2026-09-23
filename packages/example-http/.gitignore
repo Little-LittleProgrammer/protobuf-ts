@@ -7,4 +7,5 @@
 *.descriptorset
 *.codegenreq
 dist/*
-
+/generated/
+/artifacts/

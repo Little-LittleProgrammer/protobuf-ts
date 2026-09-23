@@ -757,15 +757,15 @@ export interface IRumClient {
 ```ts
 export class RumClient implements IRumClient, ServiceInfo {
   methods = Rum.methods;
-  public defHttp: HttpTransport;
+  private _httpTransport: HttpTransport;
 
   constructor(vAxios: VAxios | VAxiosInstance, opt: HttpOptions = {}) {
-    this.defHttp = new HttpTransport(vAxios, opt);
+    this._httpTransport = new HttpTransport(vAxios, opt);
   }
 
   report(input, options) {
     const method = this.methods[0];
-    return this.defHttp.request(method, input, options);
+    return this._httpTransport.request(method, input, options);
   }
 }
 ```
@@ -785,17 +785,15 @@ export class RumClient implements IRumClient, ServiceInfo {
 
 ```ts
 export class HttpClient {
-  rum: RumClient;
-  rum1: Rum1Client;
+  rum: { rum: RumClient; rum1: Rum1Client };
 
   constructor(vAxios, opt = {}) {
-    this.rum = new RumClient(vAxios, opt);
-    this.rum1 = new Rum1Client(vAxios, opt);
+    this.rum = { rum: new RumClient(vAxios, opt), rum1: new Rum1Client(vAxios, opt) };
   }
 }
 ```
 
-这样业务侧可以把一组服务当成一个 SDK 使用。
+`rum` 是 proto package，内层 `rum` / `rum1` 是 service。业务侧使用 `client.rum.rum.report(input)`；根入口按 proto package 导出（如 `rum.Rum`），不再扁平导出 service、message 或 enum。升级 SDK 需要迁移旧的扁平调用和导入；不要在打包阶段再次用 `export *` 覆盖生成的 `index.ts`。
 
 ---
 
@@ -1007,7 +1005,7 @@ service Rum {
 
 ```text
 new HttpClient(vAxios, opt)
-  -> httpClient.rum.report(input)
+  -> httpClient.rum.rum.report(input)
   -> RumClient.report()
   -> HttpTransport.request()
   -> 根据 google.api.http 得到 POST /v1/rum/report

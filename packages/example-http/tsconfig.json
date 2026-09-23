@@ -1,6 +1,6 @@
 {
     "include": [
-      "*.ts"
+      "generated/**/*.ts"
     ],
     "compilerOptions": {
       "target": "ES2015",
@@ -17,4 +17,3 @@
       ]
     }
   }
-  

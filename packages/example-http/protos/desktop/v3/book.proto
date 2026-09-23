@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package desktop.v3;
+
+message BookRequest {}
+message EmptyResp {}
+
+service BookService {
+  rpc Get(BookRequest) returns (EmptyResp);
+  rpc DefHttp(BookRequest) returns (EmptyResp);
+}

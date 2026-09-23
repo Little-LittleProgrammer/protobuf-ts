@@ -6,6 +6,13 @@ import { Interpreter } from 'src/interpreter';
 import { CommentGenerator } from './comment-generator';
 import { createLocalTypeName } from './local-type-name';
 import type { MethodInfo } from '@protobuf-ts/runtime-rpc';
+import {escapeKeyword} from './http-namespace-generator';
+
+interface HttpClientNode {
+    children: Map<string, HttpClientNode>;
+    clientName?: string;
+    serviceName?: string;
+}
 
 /**
  * HTTP service client 代码生成器。
@@ -29,11 +36,8 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
     basename: string = '';
     // 跨阶段共享信息：
     // - constructor: 聚合类 HttpClient 要复用的构造参数节点
-    // - fileDescriptor: 当前输出文件包含的所有 service 描述符
-    httpFileInfo: Record<'constructor'|'fileDescriptor', any> = {
-        constructor: [],
-        fileDescriptor: []
-    }
+    httpFileInfo: { constructor: [ts.ParameterDeclaration[], ts.Identifier[]] | undefined } = {constructor: undefined};
+    readonly generatedClients: {descriptor: ServiceDescriptorProto; source: TypescriptFile}[] = [];
 
 	constructor(
 		// 符号表：注册/查询 descriptor 对应的 TS 命名，避免冲突。
@@ -71,8 +75,6 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
         this.symbols.register(interfaceName, descriptor, source, this.symbolKindInterface);
         // 向符号表注册实现类符号。
         this.symbols.register(implementationName, descriptor, source, this.symbolKindImplementation);
-        // 记录 descriptor，供 generateAllClass() 统一组装 HttpClient 聚合类。
-        this.httpFileInfo.fileDescriptor.push(descriptor)
     }
 
     /**
@@ -80,37 +82,59 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
      * - 每个 service 作为一个属性（例如 userClient/orderClient）
      * - 构造函数统一透传 vAxios/opt 到每个子 client
      */
-    generateAllClass(source: TypescriptFile): ts.ClassDeclaration {
-        // 收集 [属性名, 类名]，例如 ['userClient', 'UserClient']。
-        const extendsName: string[][] = [];
+    generateAllClass(source: TypescriptFile, descriptors: readonly ServiceDescriptorProto[]): ts.ClassDeclaration {
+        const root: HttpClientNode = {children: new Map()};
+        assert(this.httpFileInfo.constructor);
+        const constructorParams = this.httpFileInfo.constructor;
         // 这里做导入登记，避免最终打印出的文件缺失类型引用。
         this.imports.name(source, 'HttpOptions', this.options.runtimeHttpImportPath, true),
         this.imports.name(source, 'VAxios', this.options.runtimeHttpImportPath, true),
         this.imports.name(source, 'VAxiosInstance', this.options.runtimeHttpImportPath, true);
-        this.httpFileInfo.fileDescriptor.forEach((descriptor: ServiceDescriptorProto) => {
-            // 拿到该 service 对应的实现类类型名。
-            const ServiceClient = this.imports.type(source, descriptor, this.symbolKindImplementation);
-            // 拿到服务名（符号表中的稳定命名）。
-            const ServiceName = this.symbols.get(descriptor).name;
-            // 首字母小写，作为聚合类属性名。
-            const name = ServiceName.charAt(0).toLowerCase() + ServiceName.slice(1)
-            // 把属性映射记录下来，后续统一生成属性与构造赋值。
-            extendsName.push([name, ServiceClient])
-        })
+        for (const descriptor of descriptors) {
+            const serviceName = this.registry.makeTypeName(descriptor);
+            const packageName = this.registry.fileOf(descriptor).package;
+            const name = descriptor.name!;
+            const path = [...(packageName ? packageName.split('.').map(escapeKeyword) : ['_root']), name.charAt(0).toLowerCase() + name.slice(1)];
+            let node = root;
+            for (const part of path) {
+                if (node.clientName) {
+                    this.throwNameCollision(node.serviceName!, serviceName);
+                }
+                let child = node.children.get(part);
+                if (!child) {
+                    child = {children: new Map()};
+                    node.children.set(part, child);
+                }
+                node = child;
+            }
+            if (node.clientName || node.children.size) {
+                this.throwNameCollision(node.serviceName ?? path.join('.'), serviceName);
+            }
+            node.clientName = this.imports.type(source, descriptor, this.symbolKindImplementation);
+            node.serviceName = serviceName;
+        }
+
+        const makeType = (node: HttpClientNode): ts.TypeNode => node.clientName
+            ? ts.createTypeReferenceNode(node.clientName, undefined)
+            : ts.createTypeLiteralNode([...node.children].map(([name, child]) =>
+                ts.createPropertySignature(undefined, ts.createIdentifier(name), undefined, makeType(child), undefined)
+            ));
+        const makeValue = (node: HttpClientNode): ts.Expression => node.clientName
+            ? ts.createNew(ts.createIdentifier(node.clientName), undefined, constructorParams[1])
+            : ts.createObjectLiteral([...node.children].map(([name, child]) =>
+                ts.createPropertyAssignment(ts.createIdentifier(name), makeValue(child))
+            ), true);
        
         const classDecorators: ts.Decorator[] = [];
 
         const memebers = [
             // 生成属性声明：`fooClient: FooClient`
-            ...extendsName.map(([n, k]) => {
+            ...[...root.children].map(([name, child]) => {
                 return ts.createProperty(
                     // 无 decorators。
-                    undefined, undefined, ts.createIdentifier(n),
+                    undefined, undefined, ts.createIdentifier(name),
                     // 属性类型为对应 client 类。
-                    undefined, ts.createTypeReferenceNode(
-                        ts.createIdentifier(k),
-                        undefined
-                    ),undefined
+                    undefined, makeType(child), undefined
                 )
             }),
             // 生成构造函数：
@@ -118,15 +142,15 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
             ts.createConstructor(
                 undefined, undefined,
                 // 复用实现类构造参数列表。
-                this.httpFileInfo.constructor[0],
+                constructorParams[0],
                 ts.createBlock([
-                    ...extendsName.map(([n, k]) => {
+                    ...[...root.children].map(([name, child]) => {
                         // 访问 this.<属性名>。
-                        const access = ts.createPropertyAccess(ts.createThis(), n)
+                        const access = ts.createPropertyAccess(ts.createThis(), name)
                         return ts.createStatement(ts.createAssignment(
                             access,
                             // new 对应 service client，并透传 [vAxios, opt]。
-                            ts.createNew(ts.createIdentifier(k), undefined, this.httpFileInfo.constructor[1])
+                            makeValue(child)
                         ))
                     })
                 ], true)
@@ -146,6 +170,12 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
         return statement
     }
 
+    private throwNameCollision(first: string, second: string): never {
+        const error = new Error(`HTTP client names collide: ${first} and ${second}`);
+        error.name = 'PluginMessageError';
+        throw error;
+    }
+
     /**
      * For the following .proto:
      *
@@ -161,6 +191,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
      *
      */
     generateInterface(source: TypescriptFile, descriptor: ServiceDescriptorProto): ts.InterfaceDeclaration {
+        this.validateMethodNames(descriptor);
         const
             // 把 descriptor 解释为服务模型（包含 methods 列表）。
             interpreterType = this.interpreter.getServiceType(descriptor),
@@ -206,6 +237,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
      * - 构造函数里对每个方法执行 bind(this)，防止解构/传引用后 this 丢失。
      */
     generateImplementationClass(source: TypescriptFile, descriptor: ServiceDescriptorProto): ts.ClassDeclaration {
+        this.validateMethodNames(descriptor);
         const
             // 解释服务结构。
             interpreterType = this.interpreter.getServiceType(descriptor),
@@ -262,7 +294,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
             ),
 
             ts.createProperty(
-                undefined, [ts.createModifier(ts.SyntaxKind.PublicKeyword)], 'defHttp',
+                undefined, [ts.createModifier(ts.SyntaxKind.PrivateKeyword)], '_httpTransport',
                 undefined, ts.createTypeReferenceNode(ts.createIdentifier(HttpTransport), undefined), undefined),
             // constructor(...) { this.defHttp = new HttpTransport(vAxios, opt); ... }
             ts.createConstructor(
@@ -271,7 +303,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
                 ts.createBlock([
                     ts.createStatement(ts.createAssignment(
                         // 初始化 transport 封装器。
-                        ts.createPropertyAccess(ts.createThis(), 'defHttp'),
+                        ts.createPropertyAccess(ts.createThis(), '_httpTransport'),
                         ts.createNew(ts.createIdentifier('HttpTransport'), undefined, constructorParams)
                     )),
                     ...interpreterType.methods.map(mi => {
@@ -325,8 +357,24 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
         );
 
         source.addStatement(statement);
+        this.generatedClients.push({descriptor, source});
         this.comments.addCommentsForDescriptor(statement, descriptor, 'appendToLeadingBlock');
         return statement;
+    }
+
+    private validateMethodNames(descriptor: ServiceDescriptorProto): void {
+        const names = new Map<string, string>();
+        for (const method of this.interpreter.getServiceType(descriptor).methods) {
+            const fullName = `${this.registry.makeTypeName(descriptor)}.${method.name}`;
+            if (method.localName === '_httpTransport') {
+                this.throwNameCollision('_httpTransport', fullName);
+            }
+            const previous = names.get(method.localName);
+            if (previous) {
+                this.throwNameCollision(previous, fullName);
+            }
+            names.set(method.localName, fullName);
+        }
     }
 
     /**
@@ -471,7 +519,7 @@ export class ServiceClientGeneratorHttp extends GeneratorBase {
                     // 编解码策略等细节，这里只负责透传 input/options。
 					ts.createReturn(
 						ts.createCall(
-                            ts.createPropertyAccess(ts.createPropertyAccess(ts.createThis(), 'defHttp'), 'request'),
+                            ts.createPropertyAccess(ts.createPropertyAccess(ts.createThis(), '_httpTransport'), 'request'),
 							[
                                 // 给 request 传入泛型 I/O，提升调用点类型精度。
 								inType,

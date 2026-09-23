@@ -3,8 +3,12 @@
   "version": "2.9.10",
   "description": "",
   "private": true,
+  "main": "./dist/example-http.cjs.min.js",
+  "module": "./dist/example-http.esm.min.js",
+  "types": "./dist/types/index.d.ts",
+  "files": ["dist/"],
   "scripts": {
-    "build": "rollup -c --environment TYPES:true",
+    "build": "make generate clean-dist && rollup -c --environment TYPES:true",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

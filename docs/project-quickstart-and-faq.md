@@ -190,7 +190,7 @@ ReportRequest -> POST /v1/rum/report -> ReportReply
 运行时调用链可以简化成：
 
 ```text
-业务代码调用 httpClient.rum.report(input)
+业务代码调用 httpClient.rum.rum.report(input)
   -> RumClient.report()
   -> HttpTransport.request(method, input, options)
   -> 从 method.options["google.api.http"] 取 URL 和 Method
@@ -215,7 +215,7 @@ ReportRequest -> POST /v1/rum/report -> ReportReply
 5. only_http 分支生成 service.ts 和 service.client.ts
 6. service.ts 保存 google.api.http 到 MethodInfo.options
 7. service.client.ts 生成 RumClient.report(input)
-8. 业务代码调用 httpClient.rum.report(input)
+8. 业务代码调用 httpClient.rum.rum.report(input)
 9. RumClient.report() 取出对应 MethodInfo
 10. HttpTransport 根据 google.api.http 计算 URL 和 Method
 11. 普通请求调用 vAxios.request()
@@ -382,7 +382,7 @@ options: {
 例如：
 
 ```ts
-httpClient.rum.report(input)
+httpClient.rum.rum.report(input)
 ```
 
 会进入生成的 `RumClient.report()`，再委托给 `HttpTransport.request()`。
@@ -491,7 +491,7 @@ google.api.http.body === "file"
 
 `only_http` 是同一个插件里的 HTTP SDK 生成分支。它通过 `--ts_opt=only_http` 打开，重点读取 proto 方法上的 `google.api.http`。生成时，它会把 URL、HTTP Method、body 等信息写进 `service.ts` 的方法 options 中，同时生成 `service.client.ts` 和聚合的 `http-client.ts`。
 
-运行时调用 `httpClient.rum.report(input)` 时，生成的 client 会取出对应 `MethodInfo`，交给 `HttpTransport.request()`。`HttpTransport` 从 `method.options["google.api.http"]` 计算 URL 和 Method，判断是否上传，然后调用外部注入的 `vAxios.request()` 或 `vAxios.uploadFile()`。所以 `only_http` 的本质不是标准 gRPC transport，而是用 proto 契约生成类型安全的普通 HTTP SDK。
+运行时调用 `httpClient.rum.rum.report(input)` 时，生成的 client 会取出对应 `MethodInfo`，交给 `HttpTransport.request()`。`HttpTransport` 从 `method.options["google.api.http"]` 计算 URL 和 Method，判断是否上传，然后调用外部注入的 `vAxios.request()` 或 `vAxios.uploadFile()`。所以 `only_http` 的本质不是标准 gRPC transport，而是用 proto 契约生成类型安全的普通 HTTP SDK。
 
 ---
 
