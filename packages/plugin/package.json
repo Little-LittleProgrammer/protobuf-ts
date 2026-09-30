@@ -1,6 +1,6 @@
 {
   "name": "@protobuf-ts/plugin",
-  "version": "2.9.10",
+  "version": "2.9.11",
   "description": "The protocol buffer compiler plugin \"protobuf-ts\" generates TypeScript, gRPC-web, Twirp, and more.",
   "bin": {
     "protoc-gen-ts": "./bin/protoc-gen-ts",
@@ -38,12 +38,12 @@
     "tslib": ">=1.6.1"
   },
   "dependencies": {
-    "@protobuf-ts/plugin-framework": "^2.9.10",
-    "@protobuf-ts/protoc": "^2.9.10",
-    "@protobuf-ts/runtime": "^2.9.10",
-    "@protobuf-ts/runtime-http": "^2.9.10",
-    "@protobuf-ts/runtime-rpc": "^2.9.10",
+    "@protobuf-ts/plugin-framework": "^2.9.11",
+    "@protobuf-ts/protoc": "^2.9.11",
+    "@protobuf-ts/runtime": "^2.9.11",
+    "@protobuf-ts/runtime-http": "^2.9.11",
+    "@protobuf-ts/runtime-rpc": "^2.9.11",
     "typescript": "^3.9"
   },
-  "gitHead": "2742e3995c14cab17e74be919b59b878c8383ad9"
+  "gitHead": "3c930c095144be59659f1e7a5f4bca404a0f3972"
 }
